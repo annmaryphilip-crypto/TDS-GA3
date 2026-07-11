@@ -148,11 +148,11 @@ async def extract_invoice(data: InvoiceRequest):
         r"Subtotal[: ]+\s*.*?([0-9,]+\.[0-9]+)"
     ], text)
 
-    tax = extract([
-    r"(?:GST|IGST|CGST|SGST|VAT|Tax).*?([0-9,]+(?:\.[0-9]+)?)",
-    r"Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
+  tax = extract([
+    r"(?:GST|IGST|CGST|SGST|VAT)\s*\([^)]*\)\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
     r"Tax Amount\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
-    r"Sales Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)"
+    r"Sales Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
+    r"Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)"
 ], text)
 
     currency = extract([
