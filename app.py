@@ -130,7 +130,7 @@ async def extract_invoice(data: InvoiceRequest):
     r"Inv(?:oice)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
     r"Ref(?:erence)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
     r"Document\s*No\s*[:\-]?\s*([A-Za-z0-9\-\/]+)"
-], text)
+    ], text)
 
     date = extract([
         r"Date[: ]+\s*(.+)",
@@ -142,18 +142,18 @@ async def extract_invoice(data: InvoiceRequest):
     r"Seller\s*[:\-]?\s*(.+)",
     r"Supplier\s*[:\-]?\s*(.+)",
     r"Company\s*[:\-]?\s*(.+)"
-], text)
+    ], text)
 
     amount = extract([
         r"Subtotal[: ]+\s*.*?([0-9,]+\.[0-9]+)"
     ], text)
 
-  tax = extract([
-    r"(?:GST|IGST|CGST|SGST|VAT)\s*\([^)]*\)\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
-    r"Tax Amount\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
-    r"Sales Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
-    r"Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)"
-], text)
+     tax = extract([
+        r"(?:GST|IGST|CGST|SGST|VAT)\s*\([^)]*\)\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
+        r"Tax Amount\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
+        r"Sales Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
+        r"Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)"
+    ], text)
 
     currency = extract([
         r"Currency[: ]+\s*([A-Z]{3})"
