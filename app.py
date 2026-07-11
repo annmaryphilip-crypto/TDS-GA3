@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import base64
 import os
+import re
+from datetime import datetime
 
 load_dotenv()
 
@@ -75,3 +77,91 @@ Rules:
 
     except Exception as e:
         return {"answer": str(e)}
+    
+
+
+class InvoiceRequest(BaseModel):
+    invoice_text: str
+
+def extract(patterns, text):
+    for p in patterns:
+        m = re.search(p, text, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+    return None
+
+def parse_amount(value):
+    if value is None:
+        return None
+    value = value.replace(",", "")
+    m = re.search(r"([0-9]+(?:\.[0-9]+)?)", value)
+    return float(m.group(1)) if m else None
+
+def parse_date(value):
+    if value is None:
+        return None
+
+    value = value.strip()
+
+    formats = [
+        "%Y-%m-%d",
+        "%d %B %Y",
+        "%B %d, %Y",
+        "%d/%m/%Y"
+    ]
+
+    for f in formats:
+        try:
+            return datetime.strptime(value, f).strftime("%Y-%m-%d")
+        except:
+            pass
+
+    return None
+
+
+@app.post("/extract")
+async def extract_invoice(data: InvoiceRequest):
+
+    text = data.invoice_text
+
+    invoice_no = extract([
+        r"Invoice\s*(?:No|#)?[: ]+\s*([A-Za-z0-9\-\/]+)",
+        r"Ref[: ]+\s*([A-Za-z0-9\-\/]+)"
+    ], text)
+
+    date = extract([
+        r"Date[: ]+\s*(.+)",
+        r"Issued[: ]+\s*(.+)"
+    ], text)
+
+    vendor = extract([
+        r"Vendor[: ]+\s*(.+)",
+        r"Seller[: ]+\s*(.+)"
+    ], text)
+
+    amount = extract([
+        r"Subtotal[: ]+\s*.*?([0-9,]+\.[0-9]+)"
+    ], text)
+
+    tax = extract([
+        r"(?:GST|IGST|CGST|SGST|VAT).*?([0-9,]+\.[0-9]+)"
+    ], text)
+
+    currency = extract([
+        r"Currency[: ]+\s*([A-Z]{3})"
+    ], text)
+
+    if currency is None:
+        if "USD" in text:
+            currency = "USD"
+        elif "Rs" in text or "INR" in text:
+            currency = "INR"
+
+    return {
+        "invoice_no": invoice_no,
+        "date": parse_date(date),
+        "vendor": vendor,
+        "amount": parse_amount(amount),
+        "tax": parse_amount(tax),
+        "currency": currency
+    }
