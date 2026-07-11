@@ -122,54 +122,69 @@ def parse_date(value):
 @app.post("/extract")
 async def extract_invoice(data: InvoiceRequest):
 
-    text = data.invoice_text
+    prompt = f"""
+You are an invoice extraction system.
 
-    invoice_no = extract([
-    r"Invoice\s*(?:No|Number|#)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
-    r"Invoice ID\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
-    r"Inv(?:oice)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
-    r"Ref(?:erence)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
-    r"Document\s*No\s*[:\-]?\s*([A-Za-z0-9\-\/]+)"
-    ], text)
+Extract the following fields from the invoice.
 
-    date = extract([
-        r"Date[: ]+\s*(.+)",
-        r"Issued[: ]+\s*(.+)"
-    ], text)
+Return ONLY valid JSON.
 
-    vendor = extract([
-    r"Vendor\s*[:\-]?\s*(.+)",
-    r"Seller\s*[:\-]?\s*(.+)",
-    r"Supplier\s*[:\-]?\s*(.+)",
-    r"Company\s*[:\-]?\s*(.+)"
-    ], text)
+Fields:
 
-    amount = extract([
-        r"Subtotal[: ]+\s*.*?([0-9,]+\.[0-9]+)"
-    ], text)
+invoice_no
+date
+vendor
+amount
+tax
+currency
 
-    tax = extract([
-        r"(?:GST|IGST|CGST|SGST|VAT)\s*\([^)]*\)\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
-        r"Tax Amount\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
-        r"Sales Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)",
-        r"Tax\s*[:\-]?\s*(?:Rs\.?|INR|USD)?\s*([0-9,]+(?:\.[0-9]+)?)"
-    ], text)
+Rules:
 
-    currency = extract([
-        r"Currency[: ]+\s*([A-Z]{3})"
-    ], text)
+- invoice_no = invoice number
+- date = ISO format YYYY-MM-DD
+- vendor = seller/vendor/company name
+- amount = subtotal BEFORE tax
+- tax = tax amount ONLY (NOT percentage)
+- currency = INR, USD, EUR etc.
+- If a field is missing use null.
+- Return ONLY JSON.
+- Do NOT explain anything.
 
-    if currency is None:
-        if "USD" in text:
-            currency = "USD"
-        elif "Rs" in text or "INR" in text:
-            currency = "INR"
+Invoice:
 
-    return {
-        "invoice_no": invoice_no,
-        "date": parse_date(date),
-        "vendor": vendor,
-        "amount": parse_amount(amount),
-        "tax": parse_amount(tax),
-        "currency": currency
-    }
+{data.invoice_text}
+"""
+
+    try:
+
+        response = model.generate_content(prompt)
+
+        text = response.text.strip()
+
+        text = text.replace("```json", "")
+        text = text.replace("```", "")
+        text = text.strip()
+
+        import json
+
+        result = json.loads(text)
+
+        return {
+            "invoice_no": result.get("invoice_no"),
+            "date": result.get("date"),
+            "vendor": result.get("vendor"),
+            "amount": result.get("amount"),
+            "tax": result.get("tax"),
+            "currency": result.get("currency")
+        }
+
+    except Exception:
+
+        return {
+            "invoice_no": None,
+            "date": None,
+            "vendor": None,
+            "amount": None,
+            "tax": None,
+            "currency": None
+        }
