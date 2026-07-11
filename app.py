@@ -125,9 +125,12 @@ async def extract_invoice(data: InvoiceRequest):
     text = data.invoice_text
 
     invoice_no = extract([
-        r"Invoice\s*(?:No|#)?[: ]+\s*([A-Za-z0-9\-\/]+)",
-        r"Ref[: ]+\s*([A-Za-z0-9\-\/]+)"
-    ], text)
+    r"Invoice\s*(?:No|Number|#)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
+    r"Invoice ID\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
+    r"Inv(?:oice)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
+    r"Ref(?:erence)?\s*[:\-]?\s*([A-Za-z0-9\-\/]+)",
+    r"Document\s*No\s*[:\-]?\s*([A-Za-z0-9\-\/]+)"
+], text)
 
     date = extract([
         r"Date[: ]+\s*(.+)",
@@ -135,9 +138,11 @@ async def extract_invoice(data: InvoiceRequest):
     ], text)
 
     vendor = extract([
-        r"Vendor[: ]+\s*(.+)",
-        r"Seller[: ]+\s*(.+)"
-    ], text)
+    r"Vendor\s*[:\-]?\s*(.+)",
+    r"Seller\s*[:\-]?\s*(.+)",
+    r"Supplier\s*[:\-]?\s*(.+)",
+    r"Company\s*[:\-]?\s*(.+)"
+], text)
 
     amount = extract([
         r"Subtotal[: ]+\s*.*?([0-9,]+\.[0-9]+)"
